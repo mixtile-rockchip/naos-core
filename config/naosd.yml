@@ -1,0 +1,14 @@
+naosd:
+  unixSocket: /var/run/naosd.sock
+  tempDir: /run/naos/container
+  containersDir: /var/lib/naos/containers
+  netnsDir: /run/naos/netns
+  noPivot: true
+  autorunAll: true
+  debug: false
+  script: {}
+  build:
+    allow: false
+  log:
+    size: 0
+    level: 2

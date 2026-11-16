@@ -1,0 +1,32 @@
+#!/sbin/openrc-run
+description="NAOS container daemon"
+command="/usr/bin/naosd"
+command_args="-c /etc/naosd/config.yml"
+supervisor=supervise-daemon
+respawn_delay=2
+respawn_max=5
+respawn_period=60
+output_logger="logger -t naosd -p daemon.info"
+error_logger="logger -t naosd -p daemon.err"
+
+depend() {
+    need localmount
+    after syslog
+    before naos-core
+}
+
+start_pre() {
+    if mountpoint -q /sys/fs/cgroup; then
+        if ! awk '$2 == "/sys/fs/cgroup" && $3 == "cgroup2" { found=1 } END { exit !found }' /proc/mounts; then
+            eerror "/sys/fs/cgroup is mounted with an unsupported filesystem"
+            return 1
+        fi
+    else
+        [ -d /sys/fs/cgroup ] || mkdir -p /sys/fs/cgroup || return 1
+        mount -t cgroup2 -o nosuid,nodev,noexec cgroup2 /sys/fs/cgroup || return 1
+    fi
+    checkpath -d -m 0700 /run/naos/container /run/naos/netns || return 1
+    checkpath -d -m 0755 /var/lib/naos || return 1
+    checkpath -d -m 0755 /var/lib/naos/containers || return 1
+    test -r /etc/naosd/config.yml
+}

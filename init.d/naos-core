@@ -1,0 +1,18 @@
+#!/sbin/openrc-run
+description="NAOS Core local control service"
+# Apply the single-P setting before the Go runtime initializes.
+export GOMAXPROCS=1
+command="/usr/bin/naos-core"
+command_args="serve"
+supervisor=supervise-daemon
+respawn_delay=2
+respawn_max=5
+respawn_period=60
+output_logger="logger -t naos-core -p daemon.info"
+error_logger="logger -t naos-core -p daemon.err"
+
+depend() {
+    need localmount
+    use dbus rauc avahi-daemon naosd
+    after bootmisc syslog
+}
