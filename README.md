@@ -60,6 +60,8 @@ Use [config/device.ini.example](config/device.ini.example) as `/etc/naos-core/de
 
 The default Unix socket is `/run/naos/core.sock`; the optional HTTP API listens on `127.0.0.1:8890`. Restart Core after manually editing the configuration. Successful `hawkbit register` applies registration settings to the running service.
 
+To start a configured application at boot, set `[container] enabled=true` and `manifest` to its manifest under `/userdata/` or `/var/lib/naos/containers/<id>/manifest.yml`.
+
 ## Commands
 
 ```sh

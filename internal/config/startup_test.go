@@ -14,6 +14,7 @@ func TestContainerStartupConfiguration(t *testing.T) {
 	}{
 		{"legacy", "address=/run/custom-naosd.sock\n", "/userdata/manifest.yml", false, 0},
 		{"enabled", "enabled=true\nmanifest=/userdata/myapp/manifest.yml\n", "/userdata/myapp/manifest.yml", true, 0},
+		{"installed", "enabled=true\nmanifest=/var/lib/naos/containers/myapp/manifest.yml\n", "/var/lib/naos/containers/myapp/manifest.yml", true, 0},
 		{"disabled", "enabled=false\nmanifest=/userdata/myapp/manifest.yml\n", "/userdata/myapp/manifest.yml", false, 0},
 		{"defaultManifest", "enabled=true\n", "/userdata/manifest.yml", true, 0},
 		{"emptyManifest", "enabled=true\nmanifest=\n", "", false, 1},
@@ -40,7 +41,9 @@ func TestContainerStartupConfiguration(t *testing.T) {
 }
 
 func TestContainerManifestPathValidation(t *testing.T) {
-	for _, value := range []string{"", "/userdata/manifest.yml", "/userdata/myapp/manifest.yml", "/userdata/my app/manifest.yml"} {
+	for _, value := range []string{"", "/userdata/manifest.yml", "/userdata/myapp/manifest.yml", "/userdata/my app/manifest.yml",
+		"/var/lib/naos/containers/myapp/manifest.yml", "/var/lib/naos/containers/demo_1.2-test/manifest.yml",
+		"/var/lib/naos/containers/" + strings.Repeat("a", 128) + "/manifest.yml"} {
 		cfg := defaults()
 		if err := assign(&cfg, "container.manifest", value); err != nil || cfg.ContainerManifest != value {
 			t.Fatalf("valid manifest path %q: %v", value, err)
@@ -51,13 +54,19 @@ func TestContainerManifestPathValidation(t *testing.T) {
 		"/userdata/app/manifest.yaml", "/userdata/app//manifest.yml", "/userdata/../app/manifest.yml", "/userdata/app/./manifest.yml", "/userdata/app/manifest.yml/",
 		"/userdata/app\x00/manifest.yml", "/userdata/app\n/manifest.yml", "/userdata/app\r/manifest.yml", "/userdata/app\t/manifest.yml", "/userdata/app\x7f/manifest.yml", "/userdata/app\u0085/manifest.yml",
 		"/userdata/" + strings.Repeat("a", 4096) + "/manifest.yml",
+		"/var/lib/naos/containers/manifest.yml", "/var/lib/naos/containers-other/myapp/manifest.yml", "/var/lib/naos/containers/myapp/nested/manifest.yml",
+		"/var/lib/naos/containers/myapp/manifest.yaml", "/var/lib/naos/containers/myapp/manifest.yml/", "/var/lib/naos/containers//myapp/manifest.yml",
+		"/var/lib/naos/containers/../myapp/manifest.yml", "/var/lib/naos/containers/./manifest.yml", "/var/lib/naos/containers/../manifest.yml",
+		"/var/lib/naos/containers/.hidden/manifest.yml", "/var/lib/naos/containers/_id/manifest.yml", "/var/lib/naos/containers/-id/manifest.yml",
+		"/var/lib/naos/containers/my app/manifest.yml", "/var/lib/naos/containers/中文/manifest.yml", "/var/lib/naos/containers/a\n/manifest.yml",
+		"/var/lib/naos/containers/" + strings.Repeat("a", 129) + "/manifest.yml",
 	} {
 		cfg := defaults()
 		err := assign(&cfg, "container.manifest", value)
 		if err == nil || cfg.ContainerManifest != "/userdata/manifest.yml" || !strings.Contains(err.Error(), "container.manifest:") {
 			t.Fatalf("invalid manifest path case %d: %v", i, err)
 		}
-		if err.Error() != "container.manifest: expected a clean /userdata/ path to manifest.yml within the length limit" {
+		if err.Error() != "container.manifest: expected a clean /userdata/ path to manifest.yml or /var/lib/naos/containers/<id>/manifest.yml within the length limit" {
 			t.Fatalf("rejected path case %d did not use a redacted warning", i)
 		}
 	}

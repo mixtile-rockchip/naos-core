@@ -60,6 +60,8 @@ NAOS 设备管理服务与命令行工具。
 
 默认 Unix socket 为 `/run/naos/core.sock`，可选 HTTP API 监听 `127.0.0.1:8890`。手动修改配置后重启 Core；`hawkbit register` 成功后会向运行中的服务应用注册配置。
 
+需要开机启动业务时，在 `[container]` 中设置 `enabled=true`，并将 `manifest` 指向 `/userdata/` 下的业务清单或 `/var/lib/naos/containers/<id>/manifest.yml`。
+
 ## 命令
 
 ```sh

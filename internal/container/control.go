@@ -30,6 +30,23 @@ func ValidID(id string) bool {
 	return true
 }
 
+// ValidManifestPath accepts userdata manifests and the standard installed
+// container layout. Installed manifests must be directly under a valid ID.
+func ValidManifestPath(path string) bool {
+	if len(path) > 4096 || filepath.Clean(path) != path || filepath.Base(path) != "manifest.yml" || strings.ContainsFunc(path, unicode.IsControl) {
+		return false
+	}
+	if strings.HasPrefix(path, "/userdata/") {
+		return true
+	}
+	relative, installed := strings.CutPrefix(path, "/var/lib/naos/containers/")
+	if !installed {
+		return false
+	}
+	id, manifest := strings.CutSuffix(relative, "/manifest.yml")
+	return manifest && ValidID(id)
+}
+
 type RemoteError struct {
 	Code    uint64
 	Message string
@@ -59,11 +76,11 @@ func (c Client) Change(ctx context.Context, id, action string) error {
 	return c.control(ctx, method, id)
 }
 
-// StartManifest asks naosd to load an external container directory in memory.
+// StartManifest asks naosd to start an installed or external container directory.
 // It does not install a package, change autorun, or retry an ambiguous Start.
 func (c Client) StartManifest(ctx context.Context, path string) error {
-	if len(path) > 4096 || !strings.HasPrefix(path, "/userdata/") || filepath.Clean(path) != path || filepath.Base(path) != "manifest.yml" || strings.ContainsFunc(path, unicode.IsControl) {
-		return errors.New("container manifest must be a clean /userdata/ path ending in manifest.yml")
+	if !ValidManifestPath(path) {
+		return errors.New("container manifest must be a clean /userdata/ path or /var/lib/naos/containers/<id>/manifest.yml")
 	}
 	return c.control(ctx, "Start", path)
 }

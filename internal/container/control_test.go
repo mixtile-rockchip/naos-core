@@ -14,6 +14,7 @@ func TestChangeOperationsAndRemoteFailure(t *testing.T) {
 		{"stop", "Stop", "demo-test_1"},
 		{"restart", "Restart", "demo-test_1"},
 		{"manifest", "Start", "/userdata/business/manifest.yml"},
+		{"manifest", "Start", "/var/lib/naos/containers/demo-test_1/manifest.yml"},
 	} {
 		for _, code := range []uint64{0, 5} {
 			t.Run(fmt.Sprintf("%s/%d", operation.action, code), func(t *testing.T) {
@@ -68,8 +69,9 @@ func TestChangeOperationsAndRemoteFailure(t *testing.T) {
 }
 
 func TestStartManifestRejectsUnsafePathsBeforeConnecting(t *testing.T) {
-	for _, path := range []string{"", "manifest.yml", "/etc/manifest.yml", "/userdata/../manifest.yml", "/userdata//app/manifest.yml", "/userdata/app/start.sh", "/userdata/app/manifest.yml\x00", "/userdata/app\n/manifest.yml"} {
-		if err := (Client{Socket: "/nonexistent"}).StartManifest(context.Background(), path); err == nil || err.Error() != "container manifest must be a clean /userdata/ path ending in manifest.yml" {
+	for _, path := range []string{"", "manifest.yml", "/etc/manifest.yml", "/userdata/../manifest.yml", "/userdata//app/manifest.yml", "/userdata/app/start.sh", "/userdata/app/manifest.yml\x00", "/userdata/app\n/manifest.yml",
+		"/var/lib/naos/containers/manifest.yml", "/var/lib/naos/containers/a/nested/manifest.yml", "/var/lib/naos/containers/.hidden/manifest.yml", "/var/lib/naos/containers/../a/manifest.yml"} {
+		if err := (Client{Socket: "/nonexistent"}).StartManifest(context.Background(), path); err == nil || err.Error() != "container manifest must be a clean /userdata/ path or /var/lib/naos/containers/<id>/manifest.yml" {
 			t.Fatalf("unsafe path was sent to the daemon: %q: %v", path, err)
 		}
 	}

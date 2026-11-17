@@ -10,9 +10,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 
 	"gopkg.in/ini.v1"
+
+	"naos.local/core/internal/container"
 )
 
 const (
@@ -171,8 +172,8 @@ func assign(cfg *Config, key, value string) error {
 	case "container.enabled":
 		return setBool(&cfg.ContainerEnabled)
 	case "container.manifest":
-		if value != "" && (!strings.HasPrefix(value, "/userdata/") || filepath.Clean(value) != value || filepath.Base(value) != "manifest.yml" || len(value) > 4096 || strings.IndexFunc(value, unicode.IsControl) >= 0) {
-			return bad("expected a clean /userdata/ path to manifest.yml within the length limit")
+		if value != "" && !container.ValidManifestPath(value) {
+			return bad("expected a clean /userdata/ path to manifest.yml or /var/lib/naos/containers/<id>/manifest.yml within the length limit")
 		}
 		cfg.ContainerManifest = value
 	case "boot.check_enabled":
