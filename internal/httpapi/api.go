@@ -19,6 +19,7 @@ import (
 	"naos.local/core/internal/oem"
 	"naos.local/core/internal/operation"
 	"naos.local/core/internal/recovery"
+	"naos.local/core/internal/systeminfo"
 	"naos.local/core/internal/update"
 )
 
@@ -29,6 +30,7 @@ type MDNSManager interface {
 }
 
 type Services struct {
+	System          func() (systeminfo.Info, error)
 	OEM             func() (oem.Info, error)
 	Containers      func(context.Context) ([]container.State, error)
 	Update          func(context.Context, string) error
@@ -60,6 +62,7 @@ func New(services Services) http.Handler {
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		respond(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
+	mux.HandleFunc("GET /v1/system", a.system)
 	mux.HandleFunc("GET /v1/oem", a.oem)
 	mux.HandleFunc("GET /v1/containers", a.containers)
 	mux.HandleFunc("POST /v1/containers/{id}/{action}", a.changeContainer)

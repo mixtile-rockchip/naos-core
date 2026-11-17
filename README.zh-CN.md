@@ -7,6 +7,7 @@ NAOS 设备管理服务与命令行工具。
 ## 功能
 
 - 本地 CLI、Unix socket API 和可选 HTTP API。
+- 当前固件版本、构建标识和板型查询。
 - 通过 `naosd` 查询和控制容器。
 - RAUC 签名系统包和 bootloader 包升级、hawkBit 注册与升级调度。
 - OEM 身份读取、主机名和 mDNS 管理、硬件看门狗。
@@ -61,6 +62,31 @@ NAOS 设备管理服务与命令行工具。
 默认 Unix socket 为 `/run/naos/core.sock`，可选 HTTP API 监听 `127.0.0.1:8890`。手动修改配置后重启 Core；`hawkbit register` 成功后会向运行中的服务应用注册配置。
 
 需要开机启动业务时，在 `[container]` 中设置 `enabled=true`，并将 `manifest` 指向 `/userdata/` 下的业务清单或 `/var/lib/naos/containers/<id>/manifest.yml`。
+
+## 系统信息 API
+
+`GET /v1/system` 从 `/usr/lib/naos/version.json` 读取当前固件信息，无需启用 OTA 或连接 OTA 服务器。
+
+在设备本机，通过 HTTP 或 Unix socket 调用：
+
+```sh
+curl http://127.0.0.1:8890/v1/system
+curl --unix-socket /run/naos/core.sock http://localhost/v1/system
+```
+
+响应示例：
+
+```json
+{
+  "version": "0.1.0",
+  "build_id": "example-build",
+  "machine": "generic-board"
+}
+```
+
+三个字段均为字符串。`version` 必须非空；文件中缺少 `build_id` 或 `machine` 时，对应字段返回空字符串。版本文件中的额外字段会被忽略。
+
+版本文件缺失、不可读、无效或超过 64 KiB 时，接口返回 HTTP `503`，`error.code` 为 `SYSTEM_INFO_UNAVAILABLE`。
 
 ## 命令
 

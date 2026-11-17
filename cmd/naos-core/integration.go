@@ -23,6 +23,7 @@ import (
 	"naos.local/core/internal/operation"
 	"naos.local/core/internal/recovery"
 	"naos.local/core/internal/server"
+	"naos.local/core/internal/systeminfo"
 	"naos.local/core/internal/update"
 	"naos.local/core/internal/watchdog"
 )
@@ -73,7 +74,8 @@ func runServices(cfg config.Config, path string, logger *log.Logger, stderr io.W
 		return cmd.Run()
 	}
 	handler := httpapi.New(httpapi.Services{
-		MDNS: discovery, OEM: func() (oem.Info, error) { return oem.Read(cfg.SoC) },
+		System: systeminfo.Read,
+		MDNS:   discovery, OEM: func() (oem.Info, error) { return oem.Read(cfg.SoC) },
 		Containers: containers.List, ContainerChange: containers.Change,
 		Update: updates.Install, InstallTask: updates.InstallRequest,
 		UpdateStatus: updates.Status, Tasks: updates.Tasks, Task: updates.Task, Busy: updates.Busy,
